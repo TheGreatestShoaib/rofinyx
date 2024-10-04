@@ -1,0 +1,23 @@
+
+
+
+config: /home/shoaib/.config/rofinyx/style.rasi
+show_mode_status: true
+seamless_menu: true
+commands:
+  - Play/Pause
+  # - Next
+  # - Prev
+  # - stop
+  - Random
+  - repeat
+  - consume
+  - single
+
+volumes:
+    - 25
+    - 30 
+
+
+
+
