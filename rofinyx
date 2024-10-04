@@ -20,7 +20,7 @@ def stdout_control(cmd):
 
 
 def config_parser():
-    myconfig = "/home/shoaib/.config/rofinyx/config.yaml"
+    myconfig = Path("~/.config/rofinyx/config.yaml").expanduser()
     data = ""
     if os.path.isfile(myconfig):
         with open(myconfig, 'r') as file:
@@ -72,7 +72,8 @@ class RofiInterface:
 
         if not on_repeat:
             current_file_name = self.stdout_control("mpc current -f %file%")
-            self.extract_and_save_album_cover("/home/shoaib/Music/"+current_file_name)
+            music_dir = Path("~/Music/").expanduser()
+            self.extract_and_save_album_cover(str(music_dir)+"/"+current_file_name)
 
         self.theme = f"-theme {rofi_config}"
         self.current = "Playing: " + self.stdout_control("mpc current")
