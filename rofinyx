@@ -44,7 +44,6 @@ def config_parser():
    
 
 
-
     parsed_config = data 
     mode_status = parsed_config['show_mode_status']
     menu_commands = parsed_config['commands'] 
@@ -60,19 +59,14 @@ def config_parser():
     music_dir=parsed_config.get("music_dir", "~/Music/") 
 
 
-
-
     cover_output_path = ""
     if is_draw_album_cover:
         cover_output_path = parsed_config["album_cover_output"]
 
 
-
     menu = OrderedDict()
     menu["Tracks"] = ""
    
-
-
 
     for item in menu_commands:
         if len(mpc_actions[item]) == 1:
@@ -96,6 +90,76 @@ def config_parser():
 
 
 
+class CoverHandler:
+    def __init__(self,filename, output_path):
+        self.output_path = output_path
+        
+        # defining funcs
+        linker = {
+                ".mp3" : self.extract_mp3,
+                ".flac": self.extract_flac, 
+                ".m4a" : self.extract_m4a
+                }
+        
+        #call functions according to file type
+        try:
+            ext = "."+filename.split(".")[1]
+            linker[ext](filename) 
+        except:
+            print("File Type Not Supported")
+   
+    
+    def save_cover(self, album_cover_data, output_path):
+        if album_cover_data:
+            image = Image.open(io.BytesIO(album_cover_data))
+            image.save(output_path)
+            print(f"Album cover saved as {output_path}.")
+        else:
+            print("No album cover found in the file.")
+
+
+    def extract_mp3(self,file_path):
+        album_cover_data = None
+
+        if file_path.lower().endswith(".mp3"):
+            audio = MP3(file_path, ID3=ID3)
+            if audio.tags is None:
+                raise ValueError("No ID3 tags found in the MP3 file.")
+            for tag in audio.tags.values():
+                if isinstance(tag, APIC):
+                    album_cover_data = tag.data
+                    break
+
+        self.save_cover(album_cover_data,self.output_path) 
+    
+    def extract_flac(self,file_path):
+        album_cover_data = None
+        # Extract album cover from FLAC files
+        if file_path.lower().endswith(".flac"):
+            audio = FLAC(file_path)
+            if len(audio.pictures) > 0:
+                album_cover_data = audio.pictures[0].data
+            else:
+                raise ValueError("No album cover found in the FLAC file.")
+
+        self.save_cover(album_cover_data,self.output_path) 
+    
+
+    def extract_m4a(self,file_path):
+        album_cover_data = None
+        if file_path.lower().endswith(".m4a"):
+            audio = MP4(file_path)
+            if "covr" in audio:
+                album_cover_data = audio["covr"][0]
+            else:
+                raise ValueError("No album cover found in the M4A file.")
+        self.save_cover(album_cover_data,self.output_path) 
+
+
+
+
+
+
 
 
 
@@ -109,7 +173,7 @@ class RofiInterface:
                 try:
                     current_file_name = self.stdout_control("mpc current -f %file%")
                     music_dir = Path(music_dir).expanduser()
-                    self.extract_and_save_album_cover(str(music_dir)+"/"+current_file_name,Path(cover_output_path).expanduser())
+                    CoverHandler(str(music_dir)+"/"+current_file_name,Path(cover_output_path).expanduser())
                 except Exception as e:
                     print(e)
 
@@ -121,40 +185,40 @@ class RofiInterface:
         
     def extract_and_save_album_cover(self,file_path, output_path):
         """ """
-        album_cover_data = None
+        album_cover_data = none
 
         if file_path.lower().endswith(".mp3"):
-            audio = MP3(file_path, ID3=ID3)
-            if audio.tags is None:
-                raise ValueError("No ID3 tags found in the MP3 file.")
+            audio = mp3(file_path, id3=id3)
+            if audio.tags is none:
+                raise valueerror("no id3 tags found in the mp3 file.")
             for tag in audio.tags.values():
-                if isinstance(tag, APIC):
+                if isinstance(tag, apic):
                     album_cover_data = tag.data
                     break
 
-        # Extract album cover from FLAC files
+        # extract album cover from flac files
         elif file_path.lower().endswith(".flac"):
-            audio = FLAC(file_path)
+            audio = flac(file_path)
             if len(audio.pictures) > 0:
                 album_cover_data = audio.pictures[0].data
             else:
-                raise ValueError("No album cover found in the FLAC file.")
+                raise valueerror("no album cover found in the flac file.")
 
         elif file_path.lower().endswith(".m4a"):
-            audio = MP4(file_path)
+            audio = mp4(file_path)
             if "covr" in audio:
                 album_cover_data = audio["covr"][0]
             else:
-                raise ValueError("No album cover found in the M4A file.")
+                raise valueerror("no album cover found in the m4a file.")
         
         else:
             print(file_path.lower())
-            # raise ValueError("Unsupported file format. Only MP3, FLAC, and M4A are supported.")
+            # raise valueerror("unsupported file format. only mp3, flac, and m4a are supported.")
 
         if album_cover_data:
-            image = Image.open(io.BytesIO(album_cover_data))
+            image = image.open(io.bytesio(album_cover_data))
             image.save(output_path)
-            print(f"Album cover saved as {output_path}.")
+            print(f"album cover saved as {output_path}.")
         else:
             print("No album cover found in the file.")
 
@@ -179,7 +243,7 @@ class RofiInterface:
         
         playlists = self.stdout_control("mpc lsplaylists").replace("\n","|")
         print(playlists)
-        rofi_menuer = f"echo 'local|{playlists}' | rofi {self.theme} -sep '|' -mesg '{ self.current }' -i -dmenu -p MPC "
+        rofi_menuer = f"echo \"local|{playlists}\" | rofi {self.theme} -sep '|' -mesg \"{ self.current }\" -i -dmenu -p MPC "
         rofi = self.stdout_control(rofi_menuer)
         
         
@@ -189,7 +253,7 @@ class RofiInterface:
             main_list = self.stdout_control("mpc listall").split("\n")
             songs_string = ""
             for m in main_list:
-                songs_string = songs_string + f" '{m}' "
+                songs_string = songs_string + f" \"{m}\" "
             self.stdout_control(f"mpc clear; mpc add {songs_string} ; mpc play ")
         else:
             self.stdout_control(f"mpc clear; mpc load '{rofi}'; mpc play")
@@ -204,18 +268,18 @@ class RofiInterface:
         tracks_dict = { track_list[i]:i+1 for i in range(len(track_list)) }
 
         if len(track_list) > 1:
-            all_tracks = "SOURCES|" + tracks 
+            all_tracks = "YOUR PLAYLISTS|" + tracks 
             # print(theme)
-            rofi_menuer = f"echo '{all_tracks}' | rofi {self.theme} -sep '|' -selected-row 1 -mesg '{ self.current }' -i -dmenu -p tracks "
+            rofi_menuer = f"echo \"{all_tracks}\" | rofi {self.theme} -sep '|' -selected-row 1 -mesg \"{ self.current }\" -i -dmenu -p tracks "
             rofi = self.stdout_control(rofi_menuer)
             
-            if rofi == "SOURCES":
+            if rofi == "YOUR PLAYLISTS":
                 self.trimenu()
             else:
                 self.stdout_control(f"mpc play {tracks_dict[rofi]}")
 
         else:
-            rofi_menuer = f"echo 'Playlist Empty: Return To Sources' | rofi {self.theme} -sep '|' -selected-row 0 -mesg '{ self.current }' -i -dmenu -p tracks "
+            rofi_menuer = f"echo 'Playlist Empty: Return To Sources' | rofi {self.theme} -sep '|' -selected-row 0 -mesg \"{ self.current }\" -i -dmenu -p tracks "
             rofi = self.stdout_control(rofi_menuer)
             if rofi == "Playlist Empty: Return To Sources":
                 self.trimenu()
@@ -232,7 +296,7 @@ class RofiInterface:
                 check_call(self.actions[rofi], shell=True)
                 if self.is_seamless:
                     configurations = config_parser()
-                    mpc_controller = RofiInterface(configurations[0],configurations[1],configurations[2], configurations[3],configurations[4], configurations[5] ,on_repeat=True)
+                    mpc_controller = RofiInterface(*configurations ,on_repeat=True)
                     mpc_controller.run()
             except Exception as e:
                 print("Exited:",e)
@@ -241,7 +305,7 @@ class RofiInterface:
 
 if __name__ == "__main__":
     configurations = config_parser()
-    mpc_controller = RofiInterface(configurations[0],configurations[1],configurations[2],configurations[3],configurations[4], configurations[5])
+    mpc_controller = RofiInterface(*configurations)
     mpc_controller.run()
 
 
