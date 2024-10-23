@@ -1,18 +1,16 @@
 #!/usr/bin/env python
 
-
 from subprocess import Popen, PIPE, check_output, check_call
-import yaml
-import os
 from collections import OrderedDict
+from pathlib import Path
+import os
+import io
+import yaml
+from PIL import Image
 from mutagen.mp3 import MP3
 from mutagen.flac import FLAC
 from mutagen.id3 import ID3, APIC
 from mutagen.mp4 import MP4
-from PIL import Image
-import io
-from pathlib import Path
-
 
 def stdout_control(cmd):
     output = Popen(cmd,shell=True, stdout=PIPE).communicate()[0]
@@ -20,39 +18,61 @@ def stdout_control(cmd):
 
 
 def config_parser():
+    """ """
     myconfig = Path("~/.config/rofinyx/config.yaml").expanduser()
     data = ""
     if os.path.isfile(myconfig):
-        with open(myconfig, 'r') as file:
+        with open(myconfig, 'r', encoding="utf-8") as file:
             data = yaml.safe_load(file)
-  
-    single = stdout_control("mpc | tail -n -1 | awk '{print $8}'")
-    repeat = stdout_control("mpc | tail -n -1 | awk '{print $4}'")
-    random = stdout_control("mpc | tail -n -1 | awk '{print $6}'")
-    consume = stdout_control("mpc | tail -n -1 | awk '{print $10}'")
-
+    
+    stats = stdout_control("mpc | tail -n 1").split(":")
+    stats = [x.split(" ")[1] for x in stats[2:]]
+    
+    # repeat-0, random-1 , single-2 , consume-3
 
     mpc_actions  = {
 
       "Play/Pause": ("mpc toggle",),
       "Next": ("mpc next",),
       "Prev": ("mpc prev",),
-      f"Random": ("mpc random",random),
-      f"consume":("mpc consume",consume),
-      f"single":("mpc single",single),
-      f"repeat":("mpc repeat",repeat)
+      "repeat":("mpc repeat",stats[0]),
+      "Random": ("mpc random",stats[1]),
+      "single":("mpc single",stats[2]),
+      "consume":("mpc consume",stats[3])
 
             }
+   
+
 
 
     parsed_config = data 
     mode_status = parsed_config['show_mode_status']
     menu_commands = parsed_config['commands'] 
-    rofi_config_file = parsed_config['config']
+    
+    rofi_config = ""
+    rofi_config_file = parsed_config['rofi-config']
+    if rofi_config_file != "default":
+        rofi_config = Path(rofi_config_file).expanduser()
+        rofi_config = f"-theme {rofi_config}"
+
     is_seamless = parsed_config["seamless_menu"]
+    is_draw_album_cover = parsed_config["draw_album_cover"]
+    music_dir=parsed_config.get("music_dir", "~/Music/") 
+
+
+
+
+    cover_output_path = ""
+    if is_draw_album_cover:
+        cover_output_path = parsed_config["album_cover_output"]
+
+
+
     menu = OrderedDict()
     menu["Tracks"] = ""
-    relative_path = Path(rofi_config_file).expanduser()
+   
+
+
 
     for item in menu_commands:
         if len(mpc_actions[item]) == 1:
@@ -62,25 +82,45 @@ def config_parser():
                 menu[f"{item}   ({mpc_actions[item][1]})"] = mpc_actions[item][0] 
             else:
                 menu[item] = mpc_actions[item][0]
+    
+    if parsed_config["show_volumes"]:
+        vols = parsed_config["volumes"]
+        for vol in vols:
+            menu[f"volume {str(vol)}"] = f"mpc volume {str(vol)}"
 
-    return ( relative_path , dict(menu), is_seamless )
+
+    return ( rofi_config, dict(menu), is_seamless, is_draw_album_cover, music_dir ,cover_output_path)
+
+
+
+
+
+
+
 
 
 class RofiInterface:
-    def __init__(self, rofi_config, menu_actions, seamlessness, on_repeat=False):
+    """ """
+    def __init__(self, rofi_config, menu_actions, seamlessness, is_draw_album_cover, music_dir ,cover_output_path="" ,on_repeat=False, ): #on_repeat basically means if it's on seemless repetition or not.
         
+        if is_draw_album_cover:
+            if not on_repeat:
+                print(cover_output_path)
+                try:
+                    current_file_name = self.stdout_control("mpc current -f %file%")
+                    music_dir = Path(music_dir).expanduser()
+                    self.extract_and_save_album_cover(str(music_dir)+"/"+current_file_name,Path(cover_output_path).expanduser())
+                except Exception as e:
+                    print(e)
 
-        if not on_repeat:
-            current_file_name = self.stdout_control("mpc current -f %file%")
-            music_dir = Path("~/Music/").expanduser()
-            self.extract_and_save_album_cover(str(music_dir)+"/"+current_file_name)
-
-        self.theme = f"-theme {rofi_config}"
+        # self.theme = f"-theme {rofi_config}"
+        self.theme = rofi_config
         self.current = "Playing: " + self.stdout_control("mpc current")
         self.actions = menu_actions 
         self.is_seamless = seamlessness 
         
-    def extract_and_save_album_cover(self,file_path, output_path=Path("~/.config/rofinyx/output_cover.jpg").expanduser()):
+    def extract_and_save_album_cover(self,file_path, output_path):
+        """ """
         album_cover_data = None
 
         if file_path.lower().endswith(".mp3"):
@@ -124,10 +164,9 @@ class RofiInterface:
         return output.decode().strip()
 
     def main_menu(self):
-
-
-
-        keys_parsed = [x for x in self.actions.keys()]
+        """ """
+        
+        keys_parsed = list(self.actions.keys())
         commands_list = "|".join(keys_parsed)
         rofi_menuer = f"echo '{commands_list}' | rofi {self.theme} -sep '|' -mesg '{ self.current }' -i -dmenu -p MPC "
 
@@ -136,8 +175,10 @@ class RofiInterface:
         return rofi
 
     def trimenu(self):
+        """ """
         
         playlists = self.stdout_control("mpc lsplaylists").replace("\n","|")
+        print(playlists)
         rofi_menuer = f"echo 'local|{playlists}' | rofi {self.theme} -sep '|' -mesg '{ self.current }' -i -dmenu -p MPC "
         rofi = self.stdout_control(rofi_menuer)
         
@@ -151,11 +192,12 @@ class RofiInterface:
                 songs_string = songs_string + f" '{m}' "
             self.stdout_control(f"mpc clear; mpc add {songs_string} ; mpc play ")
         else:
-            self.stdout_control(f"mpc clear; mpc load {rofi}; mpc play")
+            self.stdout_control(f"mpc clear; mpc load '{rofi}'; mpc play")
         self.submenu() 
 
 
     def submenu(self):
+        """ """
         titles = check_output("mpc playlist",shell=True).decode()    
         track_list = [x for x in titles.split("\n")][:-1]
         tracks = "|".join(track_list)
@@ -181,22 +223,25 @@ class RofiInterface:
 
 
     def run(self):
+        """ """
         rofi = self.main_menu()
         if rofi == "Tracks":
             self.submenu()
         else:
-            check_call(self.actions[rofi], shell=True)
-            if self.is_seamless:
-                configurations = config_parser()
-                mpc_controller = RofiInterface(configurations[0],configurations[1],configurations[2], on_repeat=True)
-                mpc_controller.run()
-
+            try:
+                check_call(self.actions[rofi], shell=True)
+                if self.is_seamless:
+                    configurations = config_parser()
+                    mpc_controller = RofiInterface(configurations[0],configurations[1],configurations[2], configurations[3],configurations[4], configurations[5] ,on_repeat=True)
+                    mpc_controller.run()
+            except Exception as e:
+                print("Exited:",e)
 
 
 
 if __name__ == "__main__":
     configurations = config_parser()
-    mpc_controller = RofiInterface(configurations[0],configurations[1],configurations[2])
+    mpc_controller = RofiInterface(configurations[0],configurations[1],configurations[2],configurations[3],configurations[4], configurations[5])
     mpc_controller.run()
 
 

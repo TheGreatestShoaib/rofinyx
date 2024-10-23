@@ -1,9 +1,32 @@
 
+############################################################################################
+############# This Is The Default Configuration File Provided With Rofinyx #################
+#############                                                              #################
+############################################################################################
 
 
-config: /home/shoaib/.config/rofinyx/style.rasi
+
+#Define the config file of your Rofi. If you want to use the default one, pass `default` 
+
+rofi-config: /home/shoaib/.config/rofinyx/style.rasi
+# rofi-config: default 
+
+#Music Dir you use as your mpd music dir
+music_dir: ~/Music/
+
+#will fetch the album cover from the track you are currently playing and save it to your defined path to use it in your Rofi-config
+draw_album_cover: true
+album_cover_output: ~/.config/rofinyx/output_cover.jpg
+
+
+#will show the mode you're currently in. eg. single (on)
 show_mode_status: true
+
+#will provide a seamless experience, means rofinyx will not close after performing single a task.
 seamless_menu: true
+
+#Options that will be displayed in the Main Menu (Opening Menu)
+#Available Options : 
 commands:
   - Play/Pause
   # - Next
@@ -14,10 +37,12 @@ commands:
   - consume
   - single
 
+#It shows volume levels to switch between. The volumes list will range from 1 to 100.
+show_volumes: true
 volumes:
     - 25
     - 30 
-
+    - 50
 
 
 
