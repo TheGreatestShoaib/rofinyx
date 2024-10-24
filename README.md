@@ -43,7 +43,7 @@ Rofinyx interacts with the MPC API to fetch real-time music data, including the 
     cd rofinyx;
 	pip install requirements.txt
     ```
-    [Check out if you face any problem regarding dependency installation]()
+    [Check out if you face any problem regarding dependency installation](https://github.com/TheGreatestShoaib/rofinyx/blob/main/README.md#pip-installation-problem)
 
 3. Configure:
 	```bash
