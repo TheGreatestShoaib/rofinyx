@@ -42,7 +42,8 @@ Rofinyx interacts with the MPC API to fetch real-time music data, including the 
     ```bash
     cd rofinyx;
 	pip install requirements.txt
-    ```   
+    ```
+    [Check out if you face any problem regarding dependency installation]()
 
 3. Configure:
 	```bash
@@ -56,6 +57,19 @@ Rofinyx interacts with the MPC API to fetch real-time music data, including the 
     ```
 
 5. Customize your Rofi menu and MPC settings as desired!
+#### Pip Installation Problem
+
+If your OS restricts you from installing Python packages via `pip` and you prefer to use your system's package manager, you can install the required packages using the following commands.
+
+#### For Arch Linux and Arch-based Distros
+```bash
+sudo pacman -Sy python-mutagen python-pillow python-pyyaml
+```
+For Debian and Ubuntu-based Distros
+
+```bash
+sudo apt install python3-mutagen python3-pil python3-yaml
+```
 
 ---
 
@@ -113,7 +127,7 @@ The real power of Rofinyx comes from binding it to key combinations in your wind
 In i3wm, you can add this line to your configuration to bind Rofinyx to `Mod4+m` (Super+m):
 
 ```
-bindsym $mod+m exec --no-startup-id rofinyx
+bindsym $mod+m exec --no-startup-id bash path/to/rofinyx
 ```
 
 
@@ -121,7 +135,7 @@ bindsym $mod+m exec --no-startup-id rofinyx
 ### bspwm
 For bspwm, add the following to your `sxhkd` configuration:
 ```
-super + m rofinyx
+super + m bash path/to/rofinyx
 ```
 
 
