@@ -1,6 +1,6 @@
 
 <h3 align="center"><img src="https://i.imgur.com/oobIFjg.png" alt="rofinyx logo" height="100px"></h3>
-<p align="center">A Rofi-based MPC controller to manage your music seamlessly</p>
+<p align="center">A Rofi-powered MPC controller to manage your music seamlessly</p>
 
 <p align="center">
 <a href="./LICENSE.md"><img src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
@@ -32,6 +32,15 @@ Rofinyx interacts with the MPC API to fetch real-time music data, including the 
 
 
 ## Manual Installation
+
+#### Prerequisites
+
+To use Rofinyx, ensure the following are installed running:
+
+- [Rofi](https://github.com/davatorium/rofi) 
+- [MPD](https://mpd.readthedocs.io/en/stable/user.html)  
+- [MPC](#)  
+
 
 1. Clone the repository:
     ```bash
