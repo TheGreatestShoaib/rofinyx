@@ -102,8 +102,8 @@ class CoverHandler:
                 }
         
         #call functions according to file type
+        ext = "."+filename.split(".")[-1]
         try:
-            ext = "."+filename.split(".")[1]
             linker[ext](filename) 
         except:
             print("File Type Not Supported")
